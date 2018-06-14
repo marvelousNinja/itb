@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=2]
+
+[ext_resource path="res://itb_assets/img/combat/icons/movearrow_d.png" type="Texture" id=1]
+[ext_resource path="res://itb_assets/img/combat/icons/movearrow_du.png" type="Texture" id=2]
+[ext_resource path="res://itb_assets/img/combat/icons/movearrow_corner4.png" type="Texture" id=3]
+
+[node name="PathTile" type="Node2D"]
+
+[node name="Down" type="Sprite" parent="." index="0"]
+
+visible = false
+texture = ExtResource( 1 )
+_sections_unfolded = [ "Visibility" ]
+
+[node name="Line" type="Sprite" parent="." index="1"]
+
+visible = false
+texture = ExtResource( 2 )
+_sections_unfolded = [ "Visibility" ]
+
+[node name="Corner" type="Sprite" parent="." index="2"]
+
+visible = false
+texture = ExtResource( 3 )
+_sections_unfolded = [ "Transform", "Visibility" ]
+
+

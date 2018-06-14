@@ -1,18 +1,16 @@
 extends Node2D
 
-# class member variables go here, for example:
-# var a = 2
-# var b = "textvar"
+signal node_added
 
-func _ready():
-	# Called every time the node is added to the scene.
-	# Initialization here
-	pass
+func overlay_tiles(coords):
+	var overlay_scene = preload("res://OverlayTile.tscn")
+	for coord in coords:
+		var instance = overlay_scene.instance()
+		instance.position = coord
+		add_child(instance)
+		instance.add_to_group("overlay_tiles")
+		emit_signal("node_added", instance)
+		
 
-#func _process(delta):
-#	# Called every frame. Delta is time since last frame.
-#	# Update game logic here.
-#	pass
-
-#func overlay(position):
-	
+func reset_overlay_tiles():
+	get_tree().call_group('overlay_tiles', 'free')
