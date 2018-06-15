@@ -10,7 +10,8 @@ func _ready():
 
 	game_state = {
 		"mechs": [{
-			"tile_position": Vector2(0, 0)
+			"tile_position": Vector2(0, 0),
+			"can_move": true
 		}]
 	}
 
@@ -23,7 +24,7 @@ func _ready():
 func handle_mouse_entered(tile_position):
 	var events = []
 	
-	if selected_unit:
+	if selected_unit and unit_can_move(selected_unit):
 		var path = shortest_path(
 			null,
 			selected_unit["tile_position"],
@@ -34,7 +35,7 @@ func handle_mouse_entered(tile_position):
 	else:
 		var unit = unit_on(game_state, tile_position)
 		
-		if unit:
+		if unit and unit_can_move(unit):
 			overlay_shown = true
 				
 			events.append({
@@ -55,24 +56,40 @@ func handle_mouse_exited(tile_position):
 
 func handle_left_click(tile_position):
 	var events = []
-	var unit = unit_on(game_state, tile_position)
-	if unit:
-		selected_unit = unit
-		overlay_shown = true
-		
+	
+	if selected_unit and unit_can_move(selected_unit):
+		events.append({"type": "overlay_reset"})
+		events.append({"type": "path_reset"})
 		events.append({
-			"type": "mech_selected",
-			"tile_position": tile_position
+			"type": "mech_moved",
+			"path": shortest_path(
+				null,
+				selected_unit["tile_position"],
+				tile_position
+			)
 		})
 		
-		events.append({
-			"type": "overlay_reset"
-		})
-		
-		events.append({
-			"type": "overlay_shown",
-			"coords": tiles_in_distance(tile_position, 1)
-		})
+		selected_unit["can_move"] = false
+	else:
+		var unit = unit_on(game_state, tile_position)
+		if unit:
+			selected_unit = unit
+			overlay_shown = true
+			
+			events.append({
+				"type": "mech_selected",
+				"tile_position": tile_position
+			})
+			
+			events.append({
+				"type": "overlay_reset"
+			})
+			
+			if unit_can_move(selected_unit):
+				events.append({
+					"type": "overlay_shown",
+					"coords": tiles_in_distance(tile_position, 1)
+				})
 	battlefield.handle_events(events)
 	
 func handle_right_click(tile_position):
@@ -109,6 +126,9 @@ func tiles_in_distance(source_position, distance):
 		source_position + Vector2(0, 1),
 		source_position + Vector2(0, -1)
 	]
+
+func unit_can_move(unit):
+	return unit["can_move"] == true
 
 func shortest_path(map, from, to):
 	# Distances should be part of the map

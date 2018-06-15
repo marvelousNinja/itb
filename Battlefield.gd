@@ -11,6 +11,7 @@ func handle_domain_event(event):
 			var tile_size = Vector2(56, 40)
 			instance.position = map_to_world(Vector2(0, 0), tile_size)
 			add_child(instance)
+			instance.add_to_group("player_unit")
 		{"type": "combat_started", ..}:
 			var ground_tile = preload("res://GroundTile.tscn")
 			var tile_size = Vector2(56, 40)
@@ -42,6 +43,13 @@ func handle_domain_event(event):
 				instance.add_to_group("path_tiles")
 		{"type": "path_reset", ..}:
 			get_tree().call_group("path_tiles", "free")
+		{"type": "mech_moved", ..}:
+			var from = event["path"][0]
+			var to = event["path"][-1]
+			for node in get_tree().get_nodes_in_group("player_unit"):
+				var tile_position = world_to_map(node.position, Vector2(56, 40))
+				if tile_position == from:
+					node.position = map_to_world(to, Vector2(56, 40))
 		_:
 			print("Event unhandled")
 			print(event)
