@@ -24,5 +24,7 @@ shape = SubResource( 1 )
 [node name="Sprite" type="Sprite" parent="." index="1"]
 
 texture = ExtResource( 1 )
+offset = Vector2( 0, 20 )
+_sections_unfolded = [ "Offset" ]
 
 

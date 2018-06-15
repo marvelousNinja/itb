@@ -1,13 +1,13 @@
 [gd_scene load_steps=3 format=2]
 
-[ext_resource path="res://itb_assets/img/units/player/mech_electric.png" type="Texture" id=1]
+[ext_resource path="res://itb_assets/img/units/aliens/leaper.png" type="Texture" id=1]
 
 [sub_resource type="RectangleShape2D" id=1]
 
 custom_solver_bias = 0.0
 extents = Vector2( 10, 10 )
 
-[node name="Unit" type="Area2D"]
+[node name="Area2D" type="Area2D"]
 
 input_pickable = true
 gravity_vec = Vector2( 0, 1 )
@@ -20,6 +20,9 @@ audio_bus_name = "Master"
 [node name="Sprite" type="Sprite" parent="." index="0"]
 
 texture = ExtResource( 1 )
+region_enabled = true
+region_rect = Rect2( 0, 0, 56, 40 )
+_sections_unfolded = [ "Region" ]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." index="1"]
 

@@ -1,6 +1,7 @@
 extends Node2D
 
 var selected_unit = null
+var selected_ability = null
 var battlefield = null
 var game_state = null
 var overlay_shown = false
@@ -12,12 +13,16 @@ func _ready():
 		"mechs": [{
 			"tile_position": Vector2(0, 0),
 			"can_move": true
+		}],
+		"vek": [{
+			"tile_position": Vector2(3, 1)
 		}]
 	}
 
 	var events = [
 		{"type": "combat_started"},
-		{"type": "mech_deployed"}
+		{"type": "mech_deployed", "tile_position": Vector2(0, 0)},
+		{"type": "vek_emerged", "tile_position": Vector2(3, 1)}
 	]
 	battlefield.handle_events(events)
 
@@ -57,6 +62,15 @@ func handle_mouse_exited(tile_position):
 func handle_left_click(tile_position):
 	var events = []
 	
+	if selected_ability:
+		events.append({
+			"type": "mech_ability_cast", 
+			"tile_position": tile_position
+		})
+		
+		events.append({"type": "overlay_reset"})
+		selected_ability = null
+	
 	if selected_unit and unit_can_move(selected_unit):
 		events.append({"type": "overlay_reset"})
 		events.append({"type": "path_reset"})
@@ -69,6 +83,7 @@ func handle_left_click(tile_position):
 			)
 		})
 		
+		selected_unit["tile_position"] = tile_position
 		selected_unit["can_move"] = false
 	else:
 		var unit = unit_on(game_state, tile_position)
@@ -112,6 +127,24 @@ func handle_right_click(tile_position):
 	
 	battlefield.handle_events(events)
 
+func handle_gui_click(ability):
+	var events = []
+	if selected_unit:
+		selected_ability = ability
+		match ability:
+			"repair", "primary":
+				events.append({"type": "overlay_reset"})
+				events.append({"type": "mech_ability_selected", "ability": ability})
+				events.append({
+					"type": "overlay_shown", 
+					"coords": ability_target_tiles(
+						selected_unit["tile_position"],
+						ability
+					)
+				})
+				overlay_shown = true
+	battlefield.handle_events(events)
+
 func unit_on(game_state, tile_position):
 	var units = game_state["mechs"]
 	for unit in units:
@@ -129,6 +162,19 @@ func tiles_in_distance(source_position, distance):
 
 func unit_can_move(unit):
 	return unit["can_move"] == true
+
+func ability_target_tiles(source_position, ability):
+	if ability == 'repair':
+		return [source_position]
+	elif ability == 'primary':
+		return [
+			source_position + Vector2(1, 0),
+			source_position + Vector2(-1, 0),
+			source_position + Vector2(0, 1),
+			source_position + Vector2(0, -1)
+		]
+	else:
+		return []
 
 func shortest_path(map, from, to):
 	# Distances should be part of the map

@@ -4,14 +4,22 @@ func handle_events(events):
 	for event in events: handle_domain_event(event)
 
 func handle_domain_event(event):
+	print(event)
 	match event:
 		{"type": "mech_deployed", ..}:
 			var unit_scene = preload("res://Unit.tscn")
 			var instance = unit_scene.instance()
 			var tile_size = Vector2(56, 40)
-			instance.position = map_to_world(Vector2(0, 0), tile_size)
+			instance.position = map_to_world(event.tile_position, tile_size)
 			add_child(instance)
 			instance.add_to_group("player_unit")
+		{"type": "vek_emerged", ..}:
+			var unit_scene = preload("res://VekUnit.tscn")
+			var instance = unit_scene.instance()
+			var tile_size = Vector2(56, 40)
+			instance.position = map_to_world(event.tile_position, tile_size)
+			add_child(instance)
+			instance.add_to_group("vek_unit")
 		{"type": "combat_started", ..}:
 			var ground_tile = preload("res://GroundTile.tscn")
 			var tile_size = Vector2(56, 40)
@@ -50,6 +58,14 @@ func handle_domain_event(event):
 				var tile_position = world_to_map(node.position, Vector2(56, 40))
 				if tile_position == from:
 					node.position = map_to_world(to, Vector2(56, 40))
+		{"type": "mech_selected", ..}:
+			var unit_ui = preload("res://UnitUI.tscn")
+			var instance = unit_ui.instance()
+			add_child(instance)
+			instance.add_to_group("unit_ui")
+			listen_unit_ui_node(instance)
+		{"type": "mech_deselected", ..}:
+			get_tree().call_group("unit_ui", "free")
 		_:
 			print("Event unhandled")
 			print(event)
@@ -80,6 +96,20 @@ func listen_node(node):
 	node.connect("input_event", self, "_on_node_input_event", [node])
 	node.connect("mouse_entered", self, "_on_node_mouse_entered", [node])
 	node.connect("mouse_exited", self, "_on_node_mouse_exited", [node])
+
+func listen_unit_ui_node(node):
+	node.get_node('HBoxContainer/Repair').connect("gui_input", self, "_on_repair_gui_input_event", [node])
+	node.get_node('HBoxContainer/Primary').connect("gui_input", self, "_on_primary_gui_input_event", [node])
+
+func _on_repair_gui_input_event(event, node):
+	if is_left_click(event):
+		var game_manager = get_tree().current_scene.get_node('GameManager')
+		game_manager.handle_gui_click('repair')
+
+func _on_primary_gui_input_event(event, node):
+	if is_left_click(event):
+		var game_manager = get_tree().current_scene.get_node('GameManager')
+		game_manager.handle_gui_click('primary')
 
 func is_left_click(event):
 	return event is InputEventMouseButton \
