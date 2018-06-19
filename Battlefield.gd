@@ -30,6 +30,7 @@ func handle_domain_event(event):
 					instance.position = map_to_world(Vector2(x, y), tile_size)
 					add_child(instance)
 					listen_node(instance)
+			setup_hud()
 		{"type": "overlay_shown", ..}:
 			var overlay_scene = preload("res://OverlayTile.tscn")
 			var tile_size = Vector2(56, 40)
@@ -51,19 +52,15 @@ func handle_domain_event(event):
 				instance.add_to_group("path_tiles")
 		{"type": "path_reset", ..}:
 			get_tree().call_group("path_tiles", "free")
-		{"type": "mech_moved", ..}:
-			var from = event["path"][0]
-			var to = event["path"][-1]
+		{"type": "mech_moved", "path": var path, ..}:
+			var from = path[0]
+			var to = path[-1]
 			for node in get_tree().get_nodes_in_group("player_unit"):
 				var tile_position = world_to_map(node.position, Vector2(56, 40))
 				if tile_position == from:
 					node.position = map_to_world(to, Vector2(56, 40))
 		{"type": "mech_selected", ..}:
-			var unit_ui = preload("res://UnitUI.tscn")
-			var instance = unit_ui.instance()
-			add_child(instance)
-			instance.add_to_group("unit_ui")
-			listen_unit_ui_node(instance)
+			get_tree().call_group("unit_hud", "show")
 		{"type": "mech_deselected", ..}:
 			get_tree().call_group("unit_ui", "free")
 		_:
@@ -76,17 +73,20 @@ func _on_node_input_event(viewport, event, shape_idx, node):
 	var game_manager = get_tree().current_scene.get_node('GameManager')
 	
 	if is_left_click(event):
-		game_manager.handle_left_click(tile_position)
+		game_manager.handle({"type": "click", "position": tile_position})
 	elif is_right_click(event):
-		game_manager.handle_right_click(tile_position)
+		# TODO AS: Right Click command?
+		pass
 
 func _on_node_mouse_entered(node):
 	var tile_size = Vector2(56, 40)
 	var tile_position = world_to_map(node.position, tile_size)
 	var game_manager = get_tree().current_scene.get_node('GameManager')
-	game_manager.handle_mouse_entered(tile_position)
+	game_manager.handle({"type": "hover", "position": tile_position})
 
 func _on_node_mouse_exited(node):
+	# TODO AS: Ignoring mouse exit for now
+	return
 	var tile_size = Vector2(56, 40)
 	var tile_position = world_to_map(node.position, tile_size)
 	var game_manager = get_tree().current_scene.get_node('GameManager')
@@ -97,20 +97,30 @@ func listen_node(node):
 	node.connect("mouse_entered", self, "_on_node_mouse_entered", [node])
 	node.connect("mouse_exited", self, "_on_node_mouse_exited", [node])
 
-func listen_unit_ui_node(node):
-	node.get_node('HBoxContainer/Repair').connect("gui_input", self, "_on_repair_gui_input_event", [node])
-	node.get_node('HBoxContainer/Primary').connect("gui_input", self, "_on_primary_gui_input_event", [node])
+func setup_hud():
+	var repair = get_owner().get_node("UnitUI/VBoxContainer/HBoxContainer/Repair")
+	repair.add_to_group("unit_hud")
+	repair.connect("gui_input", self, "_on_repair_gui_input_event", [repair])
+	
+	var primary = get_owner().get_node("UnitUI/VBoxContainer/HBoxContainer/Primary")
+	primary.add_to_group("unit_hud")
+	primary.connect("gui_input", self, "_on_primary_gui_input_event", [primary])
+	
+	var avatar = get_owner().get_node("UnitUI/VBoxContainer/HBoxContainer/Avatar")
+	avatar.add_to_group("unit_hud")
+	get_tree().call_group("unit_hud", "hide")
 
 func _on_repair_gui_input_event(event, node):
+	print('Some event here')
 	if is_left_click(event):
 		var game_manager = get_tree().current_scene.get_node('GameManager')
-		game_manager.handle_gui_click('repair')
-
+		game_manager.handle({"type": "click", "ability": "repair"})
+		
 func _on_primary_gui_input_event(event, node):
 	if is_left_click(event):
 		var game_manager = get_tree().current_scene.get_node('GameManager')
-		game_manager.handle_gui_click('primary')
-
+		game_manager.handle({"type": "click", "ability": "primary"})
+		
 func is_left_click(event):
 	return event is InputEventMouseButton \
 		and event.button_index == BUTTON_LEFT \
@@ -122,6 +132,8 @@ func is_right_click(event):
 		and event.pressed
 
 func world_to_map(position, tile_size):
+	var shift = Vector2(500, 200)
+	position = position - shift
 	var diff = (position.x * 2 / tile_size.x)
 	var sum = (position.y * 2 / tile_size.y)
 	var x = (sum - diff) / 2
@@ -129,4 +141,5 @@ func world_to_map(position, tile_size):
 	return Vector2(x, y)
 
 func map_to_world(position, tile_size):
-	return Vector2((position.y - position.x) * tile_size.x / 2, (position.x + position.y) * tile_size.y / 2)
+	var shift = Vector2(500, 200)
+	return shift + Vector2((position.y - position.x) * tile_size.x / 2, (position.x + position.y) * tile_size.y / 2)
